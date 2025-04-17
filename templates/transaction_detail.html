@@ -1,0 +1,97 @@
+
+{% extends "base.html" %}
+
+{% block title %}Transaction Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('transactions') }}">Transactions</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Transaction Details</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Transaction Details</h4>
+                    <span class="badge bg-{{ 'success' if transaction.status == 'completed' else ('warning' if transaction.status == 'pending' else 'danger') }}">
+                        {{ transaction.status|capitalize }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-12 text-center">
+                            <h2 class="{{ 'text-success' if transaction.transaction_type == 'deposit' else ('text-danger' if transaction.transaction_type == 'withdraw' else 'text-info') }}">
+                                {{ "$%.2f"|format(transaction.amount) }}
+                            </h2>
+                            <p class="text-muted">{{ transaction.transaction_type|capitalize }}</p>
+                        </div>
+                    </div>
+
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th style="width: 35%">Transaction ID:</th>
+                                <td>{{ transaction.id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Date:</th>
+                                <td>{{ transaction.timestamp }}</td>
+                            </tr>
+                            <tr>
+                                <th>Description:</th>
+                                <td>{{ transaction.description }}</td>
+                            </tr>
+                            <tr>
+                                <th>Account:</th>
+                                <td>
+                                    {% if transaction.account_id %}
+                                    <a href="{{ url_for('view_account', account_id=transaction.account_id) }}">
+                                        {{ transaction.account_number }}
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if transaction.transaction_type == 'transfer' %}
+                            <tr>
+                                <th>From Account:</th>
+                                <td>
+                                    {% if transaction.from_account_id %}
+                                    <a href="{{ url_for('view_account', account_id=transaction.from_account_id) }}">
+                                        {{ transaction.from_account_number }}
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>To Account:</th>
+                                <td>
+                                    {% if transaction.to_account_id %}
+                                    <a href="{{ url_for('view_account', account_id=transaction.to_account_id) }}">
+                                        {{ transaction.to_account_number }}
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <th>Status:</th>
+                                <td>{{ transaction.status|capitalize }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('transactions') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Transactions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

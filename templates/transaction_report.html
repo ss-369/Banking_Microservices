@@ -1,0 +1,423 @@
+{% extends "layout.html" %}
+
+{% block title %}Transaction Report - Microbank{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Transaction Report</h1>
+        <p class="text-muted mb-0">
+            Period: {{ start_date }} to {{ end_date }}
+        </p>
+    </div>
+    <div class="btn-group">
+        <a href="{{ url_for('transactions') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Transactions
+        </a>
+        <button class="btn btn-outline-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>Print Report
+        </button>
+    </div>
+</div>
+
+<!-- Date Range Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('transaction_report') }}" method="GET" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+            </div>
+            <div class="col-md-5">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Apply</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Transaction Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-4">
+                        <div class="card h-100 border-light">
+                            <div class="card-body text-center">
+                                <i class="fas fa-money-bill-wave text-success fa-2x mb-3"></i>
+                                <h5 class="card-title">Total Deposits</h5>
+                                <p class="card-text text-success h3">
+                                    {{ "$%.2f"|format(report.summary.total_deposits) }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-4">
+                        <div class="card h-100 border-light">
+                            <div class="card-body text-center">
+                                <i class="fas fa-hand-holding-usd text-danger fa-2x mb-3"></i>
+                                <h5 class="card-title">Total Withdrawals</h5>
+                                <p class="card-text text-danger h3">
+                                    {{ "$%.2f"|format(report.summary.total_withdrawals) }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-4">
+                        <div class="card h-100 border-light">
+                            <div class="card-body text-center">
+                                <i class="fas fa-exchange-alt text-info fa-2x mb-3"></i>
+                                <h5 class="card-title">Total Transfers</h5>
+                                <p class="card-text text-info h3">
+                                    {{ "$%.2f"|format(report.summary.total_transfers_in) }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-4">
+                        <div class="card h-100 border-light">
+                            <div class="card-body text-center">
+                                <i class="fas fa-chart-line text-primary fa-2x mb-3"></i>
+                                <h5 class="card-title">Net Flow</h5>
+                                <p class="card-text h3 {{ 'text-success' if report.summary.net_flow >= 0 else 'text-danger' }}">
+                                    {{ "$%.2f"|format(report.summary.net_flow) }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Visualization Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Transaction Visualization</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="transactionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accounts Summary Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Account Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if report.transactions_by_account %}
+                    <div class="accordion" id="accountsAccordion">
+                        {% for account_id, account_data in report.transactions_by_account.items() %}
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="heading{{ loop.index }}">
+                                    <button class="accordion-button {{ '' if loop.index == 1 else 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="{{ 'true' if loop.index == 1 else 'false' }}" aria-controls="collapse{{ loop.index }}">
+                                        Account #{{ account_data.account_number }} ({{ account_data.account_type|capitalize }})
+                                    </button>
+                                </h2>
+                                <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {{ 'show' if loop.index == 1 else '' }}" aria-labelledby="heading{{ loop.index }}" data-bs-parent="#accountsAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-3 col-sm-6 mb-2">
+                                                <div class="card border-0 bg-light">
+                                                    <div class="card-body p-3 text-center">
+                                                        <h6 class="card-title">Deposits</h6>
+                                                        <p class="card-text text-success mb-0">{{ "$%.2f"|format(account_data.summary.total_deposits) }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 col-sm-6 mb-2">
+                                                <div class="card border-0 bg-light">
+                                                    <div class="card-body p-3 text-center">
+                                                        <h6 class="card-title">Withdrawals</h6>
+                                                        <p class="card-text text-danger mb-0">{{ "$%.2f"|format(account_data.summary.total_withdrawals) }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 col-sm-6 mb-2">
+                                                <div class="card border-0 bg-light">
+                                                    <div class="card-body p-3 text-center">
+                                                        <h6 class="card-title">Net Flow</h6>
+                                                        <p class="card-text {{ 'text-success' if account_data.summary.net_flow >= 0 else 'text-danger' }} mb-0">
+                                                            {{ "$%.2f"|format(account_data.summary.net_flow) }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 col-sm-6 mb-2">
+                                                <div class="card border-0 bg-light">
+                                                    <div class="card-body p-3 text-center">
+                                                        <h6 class="card-title">Transactions</h6>
+                                                        <p class="card-text mb-0">{{ account_data.summary.transaction_count }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {% if account_data.transactions %}
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Date</th>
+                                                            <th>Description</th>
+                                                            <th>Type</th>
+                                                            <th>Amount</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for transaction in account_data.transactions %}
+                                                            <tr class="transaction-item {{ transaction.transaction_type }}" onclick="window.location='{{ url_for('transaction_detail', transaction_id=transaction.id) }}';" style="cursor: pointer;">
+                                                                <td>{{ transaction.timestamp[:10] }}</td>
+                                                                <td>
+                                                                    {% if transaction.description %}
+                                                                        {{ transaction.description }}
+                                                                    {% else %}
+                                                                        {{ transaction.transaction_type|capitalize }}
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>
+                                                                    {% if transaction.transaction_type == 'deposit' %}
+                                                                        <span class="badge bg-success">Deposit</span>
+                                                                    {% elif transaction.transaction_type == 'withdrawal' %}
+                                                                        <span class="badge bg-danger">Withdrawal</span>
+                                                                    {% elif transaction.transaction_type == 'transfer' %}
+                                                                        <span class="badge bg-info">
+                                                                            {% if transaction.transfer_type %}
+                                                                                {{ transaction.transfer_type|upper }}
+                                                                            {% else %}
+                                                                                Transfer
+                                                                            {% endif %}
+                                                                        </span>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td class="transaction-amount {{ transaction.transaction_type }}">
+                                                                    {% if transaction.transaction_type == 'deposit' or (transaction.transaction_type == 'transfer' and transaction.to_account_id == account_id) %}
+                                                                        <span class="text-success">+{{ "$%.2f"|format(transaction.amount) }}</span>
+                                                                    {% elif transaction.transaction_type == 'withdrawal' or (transaction.transaction_type == 'transfer' and transaction.from_account_id == account_id) %}
+                                                                        <span class="text-danger">-{{ "$%.2f"|format(transaction.amount) }}</span>
+                                                                    {% else %}
+                                                                        {{ "$%.2f"|format(transaction.amount) }}
+                                                                    {% endif %}
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-info mb-0">
+                                                <i class="fas fa-info-circle me-2"></i> No transactions found for this account during the selected period.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i> No account transaction data available for the selected period.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- All Transactions Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">All Transactions</h5>
+            </div>
+            <div class="card-body">
+                {% if report.transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Account</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in report.transactions %}
+                                    <tr class="transaction-item {{ transaction.transaction_type }}">
+                                        <td>{{ transaction.timestamp[:10] }}</td>
+                                        <td>
+                                            {% if transaction.description %}
+                                                {{ transaction.description }}
+                                            {% else %}
+                                                {{ transaction.transaction_type|capitalize }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if transaction.account_number %}
+                                                {{ transaction.account_number }}
+                                            {% elif transaction.transaction_type == 'deposit' or transaction.transaction_type == 'withdrawal' %}
+                                                {{ transaction.account_id[-8:] }}
+                                            {% elif transaction.transaction_type == 'transfer' %}
+                                                {{ transaction.from_account_id[-8:] }} → {{ transaction.to_account_id[-8:] }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if transaction.transaction_type == 'deposit' %}
+                                                <span class="badge bg-success">Deposit</span>
+                                            {% elif transaction.transaction_type == 'withdrawal' %}
+                                                <span class="badge bg-danger">Withdrawal</span>
+                                            {% elif transaction.transaction_type == 'transfer' %}
+                                                <span class="badge bg-info">
+                                                    {% if transaction.transfer_type %}
+                                                        {{ transaction.transfer_type|upper }}
+                                                    {% else %}
+                                                        Transfer
+                                                    {% endif %}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ transaction.transaction_type }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="transaction-amount {{ transaction.transaction_type }}">
+                                            {% if transaction.transaction_type == 'deposit' %}
+                                                <span class="text-success">+{{ "$%.2f"|format(transaction.amount) }}</span>
+                                            {% elif transaction.transaction_type == 'withdrawal' %}
+                                                <span class="text-danger">-{{ "$%.2f"|format(transaction.amount) }}</span>
+                                            {% elif transaction.transaction_type == 'transfer' %}
+                                                {{ "$%.2f"|format(transaction.amount) }}
+                                            {% else %}
+                                                {{ "$%.2f"|format(transaction.amount) }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">{{ transaction.status }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('transaction_detail', transaction_id=transaction.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i> No transactions found for the selected period.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize date pickers
+        flatpickr("#start_date", {
+            dateFormat: "Y-m-d",
+            maxDate: document.getElementById("end_date").value || "today"
+        });
+        
+        flatpickr("#end_date", {
+            dateFormat: "Y-m-d",
+            maxDate: "today"
+        });
+        
+        // Create transaction chart
+        const transactionData = {
+            deposits: {{ report.summary.total_deposits }},
+            withdrawals: {{ report.summary.total_withdrawals }},
+            transfersIn: {{ report.summary.total_transfers_in }},
+            transfersOut: {{ report.summary.total_transfers_out }}
+        };
+        
+        const ctx = document.getElementById('transactionChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Deposits', 'Withdrawals', 'Transfers In', 'Transfers Out'],
+                datasets: [{
+                    label: 'Amount ($)',
+                    data: [
+                        transactionData.deposits,
+                        transactionData.withdrawals,
+                        transactionData.transfersIn,
+                        transactionData.transfersOut
+                    ],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.7)',
+                        'rgba(220, 53, 69, 0.7)',
+                        'rgba(23, 162, 184, 0.7)',
+                        'rgba(108, 117, 125, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(23, 162, 184, 1)',
+                        'rgba(108, 117, 125, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.raw.toFixed(2);
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

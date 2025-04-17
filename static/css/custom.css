@@ -1,0 +1,160 @@
+/* Custom styles that extend Bootstrap */
+
+/* Header and Nav styles */
+.navbar-brand img {
+    max-height: 30px;
+    margin-right: 10px;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+.nav-link.active {
+    font-weight: 700;
+}
+
+/* Dashboard stats */
+.stats-card {
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stats-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+/* Account cards */
+.account-card {
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.account-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.account-balance {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.account-number {
+    font-family: monospace;
+    letter-spacing: 2px;
+}
+
+/* Transaction list */
+.transaction-item {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.transaction-item:hover {
+    background-color: rgba(var(--bs-secondary-rgb), 0.1);
+}
+
+.transaction-item.deposit {
+    border-left-color: var(--bs-success);
+}
+
+.transaction-item.withdrawal {
+    border-left-color: var(--bs-danger);
+}
+
+.transaction-item.transfer {
+    border-left-color: var(--bs-info);
+}
+
+.transaction-amount.deposit {
+    color: var(--bs-success);
+}
+
+.transaction-amount.withdrawal {
+    color: var(--bs-danger);
+}
+
+/* Form styles */
+.form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+/* Report sections */
+.report-section {
+    border-radius: 10px;
+    background-color: rgba(var(--bs-secondary-rgb), 0.05);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.report-title {
+    border-bottom: 2px solid var(--bs-primary);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Loading spinner */
+.spinner-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Custom toast positioning */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+/* Modal styles */
+.modal-header {
+    border-bottom: 2px solid var(--bs-primary);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--bs-secondary);
+}
+
+/* Footer styles */
+.footer {
+    margin-top: 3rem;
+    padding: 2rem 0;
+    border-top: 1px solid var(--bs-secondary);
+}
+
+/* Helper classes */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.rounded-custom {
+    border-radius: 15px;
+}
+
+/* Chart container */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 2rem;
+}

@@ -1,0 +1,103 @@
+
+{% extends "base.html" %}
+
+{% block title %}Report Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ report.title }}</h2>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>Print Report
+        </button>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Report Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Report Type:</strong> {{ report.report_type|capitalize }}</p>
+                    <p><strong>Generated On:</strong> {{ report.created_at }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Period:</strong> {{ report.report_data.period.start_date }} to {{ report.report_data.period.end_date }}</p>
+                    <p><strong>Description:</strong> {{ report.description }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Total Transactions:</strong> {{ report.report_data.summary.total_count }}</p>
+                    <p><strong>Total Amount:</strong> ${{ "%.2f"|format(report.report_data.summary.total_amount) }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>By Transaction Type:</h6>
+                    <ul>
+                        {% for type, data in report.report_data.summary.by_type.items() %}
+                        <li>
+                            <strong>{{ type|capitalize }}:</strong> 
+                            {{ data.count }} transactions, 
+                            ${{ "%.2f"|format(data.amount) }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Transactions</h5>
+        </div>
+        <div class="card-body">
+            {% if report.report_data.transactions %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in report.report_data.transactions %}
+                        <tr>
+                            <td>{{ transaction.timestamp }}</td>
+                            <td>{{ transaction.description }}</td>
+                            <td>{{ transaction.transaction_type|capitalize }}</td>
+                            <td class="{{ 'text-success' if transaction.transaction_type == 'deposit' else 'text-danger' }}">
+                                ${{ "%.2f"|format(transaction.amount) }}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if transaction.status == 'completed' else ('warning' if transaction.status == 'pending' else 'danger') }}">
+                                    {{ transaction.status|capitalize }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <p class="mb-0">No transactions found for the specified period.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

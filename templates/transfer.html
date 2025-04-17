@@ -1,0 +1,77 @@
+
+{% extends "base.html" %}
+
+{% block title %}Transfer{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('transactions') }}">Transactions</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Transfer</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Transfer Funds</h4>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('transfer') }}">
+                        <div class="mb-3">
+                            <label for="from_account_id" class="form-label">From Account</label>
+                            <select class="form-select" id="from_account_id" name="from_account_id" required>
+                                <option value="">Select source account</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}" {% if request.args.get('from_account_id') == account.id %}selected{% endif %}>
+                                    {{ account.account_number }} ({{ account.account_type|capitalize }}) - Balance: ${{ "%.2f"|format(account.balance) }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="to_account_id" class="form-label">To Account</label>
+                            <select class="form-select" id="to_account_id" name="to_account_id" required>
+                                <option value="">Select destination account</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}">
+                                    {{ account.account_number }} ({{ account.account_type|capitalize }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="amount" name="amount" min="0.01" step="0.01" placeholder="0.00" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description (Optional)</label>
+                            <input type="text" class="form-control" id="description" name="description" placeholder="Transfer description">
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-exchange-alt me-2"></i>Transfer Funds
+                            </button>
+                            <a href="{{ url_for('transactions') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

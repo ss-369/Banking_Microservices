@@ -1,0 +1,65 @@
+
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Reports</h2>
+        <div>
+            <a href="{{ url_for('transaction_report') }}" class="btn btn-primary">
+                <i class="fas fa-chart-line me-2"></i>Generate Transaction Report
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Your Reports</h5>
+        </div>
+        <div class="card-body">
+            {% if reports %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Created</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>{{ report.title }}</td>
+                            <td>{{ report.report_type|capitalize }}</td>
+                            <td>{{ report.created_at }}</td>
+                            <td>{{ report.description }}</td>
+                            <td>
+                                {% if report.report_type == 'account' %}
+                                <a href="{{ url_for('account_report', account_id=report.parameters.account_id) }}" class="btn btn-sm btn-primary">
+                                    View
+                                </a>
+                                {% elif report.report_type == 'transaction' %}
+                                <a href="{{ url_for('transaction_report') }}?start_date={{ report.parameters.start_date }}&end_date={{ report.parameters.end_date }}" class="btn btn-sm btn-primary">
+                                    View
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <p class="mb-0">You haven't generated any reports yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

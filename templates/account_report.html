@@ -1,0 +1,323 @@
+{% extends "layout.html" %}
+
+{% block title %}Account Report - Microbank{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Account Report</h1>
+        <p class="text-muted mb-0">
+            Account #{{ account.account_number }} | {{ report.period.start_date }} to {{ report.period.end_date }}
+        </p>
+    </div>
+    <div class="btn-group">
+        <a href="{{ url_for('view_account', account_id=account.id) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Account
+        </a>
+        <button class="btn btn-outline-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>Print Report
+        </button>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Report Period</h5>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#dateRangeModal">
+                        <i class="fas fa-calendar-alt me-2"></i>Change Date Range
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-light">
+                            <div class="card-body">
+                                <h5 class="card-title">Account Information</h5>
+                                <div class="row">
+                                    <div class="col-6 mb-2">
+                                        <span class="text-muted">Account Number:</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="fw-bold">{{ account.account_number }}</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-muted">Account Type:</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="fw-bold">{{ account.account_type|capitalize }}</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-muted">Current Balance:</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="fw-bold">{{ "$%.2f"|format(account.balance) }}</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-muted">Status:</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="badge {{ 'bg-success' if account.status == 'active' else 'bg-secondary' }}">
+                                            {{ account.status|capitalize }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mt-3 mt-md-0">
+                        <div class="card h-100 border-light">
+                            <div class="card-body">
+                                <h5 class="card-title">Transaction Summary</h5>
+                                <div class="row">
+                                    <div class="col-6 mb-2">
+                                        <span class="text-muted">Total Deposits:</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-success fw-bold">{{ "$%.2f"|format(report.summary.total_deposits) }}</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-muted">Total Withdrawals:</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-danger fw-bold">{{ "$%.2f"|format(report.summary.total_withdrawals) }}</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-muted">Transfers In:</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-success fw-bold">{{ "$%.2f"|format(report.summary.total_transfers_in) }}</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-muted">Transfers Out:</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-danger fw-bold">{{ "$%.2f"|format(report.summary.total_transfers_out) }}</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-muted">Net Flow:</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="fw-bold {{ 'text-success' if report.summary.net_flow >= 0 else 'text-danger' }}">
+                                            {{ "$%.2f"|format(report.summary.net_flow) }}
+                                        </span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="text-muted">Transaction Count:</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <span class="fw-bold">{{ report.summary.transaction_count }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Transaction Visualization</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="transactionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Transaction Details</h5>
+            </div>
+            <div class="card-body">
+                {% if report.transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in report.transactions %}
+                                    <tr class="transaction-item {{ transaction.transaction_type }}" onclick="window.location='{{ url_for('transaction_detail', transaction_id=transaction.id) }}';" style="cursor: pointer;">
+                                        <td>{{ transaction.timestamp[:10] }}</td>
+                                        <td>
+                                            {% if transaction.description %}
+                                                {{ transaction.description }}
+                                            {% else %}
+                                                {{ transaction.transaction_type|capitalize }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if transaction.transaction_type == 'deposit' %}
+                                                <span class="badge bg-success">Deposit</span>
+                                            {% elif transaction.transaction_type == 'withdrawal' %}
+                                                <span class="badge bg-danger">Withdrawal</span>
+                                            {% elif transaction.transaction_type == 'transfer' %}
+                                                <span class="badge bg-info">
+                                                    {% if transaction.transfer_type %}
+                                                        {{ transaction.transfer_type|upper }}
+                                                    {% else %}
+                                                        Transfer
+                                                    {% endif %}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ transaction.transaction_type }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="transaction-amount {{ transaction.transaction_type }}">
+                                            {% if transaction.transaction_type == 'deposit' or (transaction.transaction_type == 'transfer' and transaction.to_account_id == account.id) %}
+                                                <span class="text-success">+{{ "$%.2f"|format(transaction.amount) }}</span>
+                                            {% elif transaction.transaction_type == 'withdrawal' or (transaction.transaction_type == 'transfer' and transaction.from_account_id == account.id) %}
+                                                <span class="text-danger">-{{ "$%.2f"|format(transaction.amount) }}</span>
+                                            {% else %}
+                                                {{ "$%.2f"|format(transaction.amount) }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">{{ transaction.status }}</span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i> No transactions found for this account during the selected period.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Date Range Modal -->
+<div class="modal fade" id="dateRangeModal" tabindex="-1" aria-labelledby="dateRangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dateRangeModalLabel">Select Date Range</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('account_report', account_id=account.id) }}" method="GET">
+                    <div class="mb-3">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ report.period.start_date }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ report.period.end_date }}">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Apply</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize date pickers
+        flatpickr("#start_date", {
+            dateFormat: "Y-m-d",
+            maxDate: document.getElementById("end_date").value || "today"
+        });
+        
+        flatpickr("#end_date", {
+            dateFormat: "Y-m-d",
+            maxDate: "today"
+        });
+        
+        // Create transaction chart
+        const transactionData = {
+            deposits: {{ report.summary.total_deposits }},
+            withdrawals: {{ report.summary.total_withdrawals }},
+            transfersIn: {{ report.summary.total_transfers_in }},
+            transfersOut: {{ report.summary.total_transfers_out }}
+        };
+        
+        const ctx = document.getElementById('transactionChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Deposits', 'Withdrawals', 'Transfers In', 'Transfers Out'],
+                datasets: [{
+                    label: 'Amount ($)',
+                    data: [
+                        transactionData.deposits,
+                        transactionData.withdrawals,
+                        transactionData.transfersIn,
+                        transactionData.transfersOut
+                    ],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.7)',
+                        'rgba(220, 53, 69, 0.7)',
+                        'rgba(23, 162, 184, 0.7)',
+                        'rgba(108, 117, 125, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(23, 162, 184, 1)',
+                        'rgba(108, 117, 125, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.raw.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
