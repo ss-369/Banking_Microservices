@@ -642,12 +642,12 @@ Several design patterns are used consistently throughout the codebase:
 
 ### 13.1 Local Development Setup
 
-The banking system is designed to be developed and run on Replit, with the following environment specifications:
+The banking system is designed to be developed and run locally with the following environment specifications:
 
-1. **Replit Environment**
+1. **Development Environment**
    - Python 3.11+ runtime
-   - Nix package management for dependencies
-   - Integrated terminal and file editor
+   - Nix package management for dependencies (optional)
+   - Terminal and code editor of choice
    - Automated package installation via `pyproject.toml`
 
 2. **Service Orchestration**
@@ -657,8 +657,9 @@ The banking system is designed to be developed and run on Replit, with the follo
 
 3. **Deployment Configuration**
    - Gunicorn WSGI server for production deployment
-   - Replit web hosting through the built-in deployment system
+   - Web hosting through a compatible deployment platform
    - Environment variable management for secrets
+
 
 ### 13.2 Development Workflow
 
