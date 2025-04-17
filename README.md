@@ -2,7 +2,7 @@
 
 A comprehensive banking system built using a microservices architecture with Python and Flask.
 
-![MicroBank](generated-icon.png)
+<img src="generated-icon.png" alt="MicroBank" width="500"/>
 
 ## Overview
 
