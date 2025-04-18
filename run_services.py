@@ -1,143 +1,106 @@
+#!/usr/bin/env python3
+"""
+Run Services Script - Helps manage the microservices for the banking application
+"""
+
 import os
-import subprocess
-import time
-import signal
 import sys
+import subprocess
+import argparse
+import signal
+import time
+import importlib.util
 
-# Define the services to start
-services = [
-    {
-        "name": "Auth Service",
-        "command": ["python", "-m", "auth_service.auth_service"],
-        "process": None
-    },
-    {
-        "name": "Account Service",
-        "command": ["python", "-m", "account_service.account_service"],
-        "process": None
-    },
-    {
-        "name": "Transaction Service",
-        "command": ["python", "-m", "transaction_service.transaction_service"],
-        "process": None
-    },
-    {
-        "name": "Reporting Service",
-        "command": ["python", "-m", "reporting_service.reporting_service"],
-        "process": None
-    },
-    {
-        "name": "API Gateway",
-        "command": ["gunicorn", "--bind", "0.0.0.0:5000", "--reuse-port", "--reload", "main:app"],
-        "process": None
-    },
-    {
-        "name": "Consul",
-        "command": ["consul", "agent", "-dev", "-client", "0.0.0.0"],
-        "process": None
-    }
-]
+def load_module(module_name, file_path):
+    """Load a module from file path"""
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
-# Set environment variables for service communication
-os.environ["AUTH_SERVICE_URL"] = "http://localhost:8001"
-os.environ["ACCOUNT_SERVICE_URL"] = "http://localhost:8002"
-os.environ["TRANSACTION_SERVICE_URL"] = "http://localhost:8003"
-os.environ["REPORTING_SERVICE_URL"] = "http://localhost:8004"
+def parse_args():
+    parser = argparse.ArgumentParser(description='Run Banking Microservices')
+    parser.add_argument('--no-auth', action='store_true', help='Do not run the authentication service')
+    parser.add_argument('--no-account', action='store_true', help='Do not run the account service')
+    parser.add_argument('--no-transaction', action='store_true', help='Do not run the transaction service')
+    parser.add_argument('--no-reporting', action='store_true', help='Do not run the reporting service')
+    parser.add_argument('--no-gateway', action='store_true', help='Do not run the API gateway')
+    return parser.parse_args()
 
-# Handle clean shutdown
-def signal_handler(sig, frame):
-    print("\nShutting down all services...")
-    for service in services:
-        if service["process"] and service["process"].poll() is None:
-            print(f"Stopping {service['name']}...")
-            service["process"].terminate()
-    sys.exit(0)
-
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
+def run_services(args):
+    """Run services based on arguments"""
+    processes = []
+    
+    # Setup signal handler
+    def signal_handler(sig, frame):
+        print('Stopping all services...')
+        for process in processes:
+            if process.poll() is None:  # If process is still running
+                process.terminate()
+        sys.exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    try:
+        # Run Auth Service
+        if not args.no_auth:
+            auth_cmd = [sys.executable, "-m", "auth_service.auth_service"]
+            print(f"Starting Auth Service: {' '.join(auth_cmd)}")
+            auth_process = subprocess.Popen(auth_cmd)
+            processes.append(auth_process)
+            time.sleep(1)  # Give it a moment to start
+        
+        # Run Account Service
+        if not args.no_account:
+            account_cmd = [sys.executable, "-m", "account_service.account_service"]
+            print(f"Starting Account Service: {' '.join(account_cmd)}")
+            account_process = subprocess.Popen(account_cmd)
+            processes.append(account_process)
+            time.sleep(1)  # Give it a moment to start
+        
+        # Run Transaction Service
+        if not args.no_transaction:
+            transaction_cmd = [sys.executable, "-m", "transaction_service.transaction_service"]
+            print(f"Starting Transaction Service: {' '.join(transaction_cmd)}")
+            transaction_process = subprocess.Popen(transaction_cmd)
+            processes.append(transaction_process)
+            time.sleep(1)  # Give it a moment to start
+        
+        # Run Reporting Service
+        if not args.no_reporting:
+            reporting_cmd = [sys.executable, "-m", "reporting_service.reporting_service"]
+            print(f"Starting Reporting Service: {' '.join(reporting_cmd)}")
+            reporting_process = subprocess.Popen(reporting_cmd)
+            processes.append(reporting_process)
+            time.sleep(1)  # Give it a moment to start
+        
+        # Run API Gateway (main.py)
+        if not args.no_gateway:
+            gateway_cmd = [sys.executable, "main.py"]
+            print(f"Starting API Gateway: {' '.join(gateway_cmd)}")
+            gateway_process = subprocess.Popen(gateway_cmd)
+            processes.append(gateway_process)
+        
+        # Wait for all processes
+        for process in processes:
+            process.wait()
+            
+    except KeyboardInterrupt:
+        print('Stopping all services...')
+        for process in processes:
+            if process.poll() is None:  # If process is still running
+                process.terminate()
+        sys.exit(0)
+    except Exception as e:
+        print(f"Error: {e}")
+        for process in processes:
+            if process.poll() is None:  # If process is still running
+                process.terminate()
+        sys.exit(1)
 
 def main():
-    # Create necessary directories
-    os.makedirs("data", exist_ok=True)
-    
-    # Start Consul first
-    try:
-        consul_service = next((s for s in services if s["name"] == "Consul"), None)
-        if consul_service:
-            # Check if Consul is already running
-            process = subprocess.Popen(["consul", "info"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            stdout, stderr = process.communicate()
-            if process.returncode == 0:
-                print("Consul is already running.")
-            else:
-                print(f"Starting {consul_service['name']}...")
-                consul_service["process"] = subprocess.Popen(
-                    consul_service["command"],
-                    stdout=None,  # Display directly to console
-                    stderr=None,  # Display directly to console
-                    text=True
-                )
-                time.sleep(5)  # Give Consul time to start
-
-                if consul_service["process"].poll() is not None:
-                    stdout, stderr = consul_service["process"].communicate()
-                    print(f"Failed to start {consul_service['name']}!")
-                    print(f"STDOUT: {stdout}")
-                    print(f"STDERR: {stderr}")
-                    signal_handler(None, None)
-                else:
-                    print(f"{consul_service['name']} started successfully!")
-
-        # Start all other services
-        for service in services:
-            if service["name"] != "Consul":
-                print(f"Starting {service['name']}...")
-                # Use subprocess.STDOUT to merge stderr into stdout for easier monitoring
-                service["process"] = subprocess.Popen(
-                service["command"],
-                stdout=None,  # Display directly to console
-                stderr=None,  # Display directly to console
-                text=True
-            )
-            # Give a moment for the service to start
-            time.sleep(1)
-            
-            # Check if process is still running (only if we started it)
-            if service["process"] is not None and service["process"].poll() is not None:
-                stdout, stderr = service["process"].communicate()
-                print(f"Failed to start {service['name']}!")
-                print(f"STDOUT: {stdout}")
-                print(f"STDERR: {stderr}")
-                signal_handler(None, None)
-            else:
-                print(f"{service['name']} started successfully!")
-        
-        print("\nAll services are running. Press Ctrl+C to stop all services.")
-        
-        # Monitor processes and keep them running
-        while True:
-            for service in services:
-                # Only poll if the process was started by this script
-                if service["process"] is not None and service["process"].poll() is not None:
-                    stdout, stderr = service["process"].communicate()
-                    print(f"{service['name']} has stopped unexpectedly!")
-                    print(f"STDOUT: {stdout}")
-                    print(f"STDERR: {stderr}")
-                    
-                    # Restart the service
-                    print(f"Restarting {service['name']}...")
-                    service["process"] = subprocess.Popen(
-                        service["command"],
-                        stdout=None,  # Display directly to console
-                        stderr=None,  # Display directly to console
-                        text=True
-                    )
-            
-            time.sleep(5)
-    
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        signal_handler(None, None)
+    args = parse_args()
+    run_services(args)
 
 if __name__ == "__main__":
     main()

@@ -2,8 +2,6 @@ import os
 import json
 import logging
 import requests
-import threading
-import time
 from flask import Flask, request, jsonify, session, redirect, url_for, render_template
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 
@@ -43,7 +41,7 @@ def format_date(value, format='%Y-%m-%d %H:%M:%S'):
     except:
         return value
 
-# Service URLs
+# Service URLs - now using environment variables for service discovery
 AUTH_SERVICE_URL = os.environ.get("AUTH_SERVICE_URL", "http://localhost:8001")
 ACCOUNT_SERVICE_URL = os.environ.get("ACCOUNT_SERVICE_URL", "http://localhost:8002")
 TRANSACTION_SERVICE_URL = os.environ.get("TRANSACTION_SERVICE_URL", "http://localhost:8003")
@@ -721,64 +719,5 @@ def page_not_found(e):
 def server_error(e):
     return render_template('error.html', error='Server error'), 500
 
-# Function to start microservices in separate threads
-def start_microservices():
-    """Start all microservices in separate threads"""
-    import subprocess
-    import sys
-
-    # Define the services to start
-    services = [
-        {
-            "name": "Auth Service",
-            "module": "auth_service.auth_service",
-            "process": None
-        },
-        {
-            "name": "Account Service",
-            "module": "account_service.account_service",
-            "process": None
-        },
-        {
-            "name": "Transaction Service",
-            "module": "transaction_service.transaction_service",
-            "process": None
-        },
-        {
-            "name": "Reporting Service",
-            "module": "reporting_service.reporting_service",
-            "process": None
-        }
-    ]
-
-    # Start each service in a separate thread
-    for service in services:
-        def run_service(service_info):
-            try:
-                logger.info(f"Starting {service_info['name']}...")
-                subprocess.run([sys.executable, "-m", service_info["module"]], check=True)
-            except subprocess.CalledProcessError:
-                logger.error(f"Failed to start {service_info['name']}")
-            except Exception as e:
-                logger.error(f"Error in {service_info['name']}: {str(e)}")
-
-        thread = threading.Thread(target=run_service, args=(service,))
-        thread.daemon = True
-        thread.start()
-        logger.info(f"{service['name']} thread started")
-
-    # Wait for services to start
-    logger.info("Waiting for services to start...")
-    time.sleep(5)
-    logger.info("All services should be running now")
-
 if __name__ == '__main__':
-    # Start microservices
-    start_microservices()
-    # Then start the API gateway
     app.run(debug=True, host='0.0.0.0', port=5000)
-
-# Only start microservices if run directly, not when run through Gunicorn
-# This prevents duplicate service starts when using run_services.py
-if __name__ == "__main__":
-    start_microservices()
