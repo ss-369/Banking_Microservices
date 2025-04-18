@@ -91,8 +91,8 @@ The system is built using a microservices architecture with the following compon
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/microbank.git
-cd microbank
+git clone git@github.com:ss-369/Banking_Microservices.git
+cd Banking_Microservices
 
 # Create and activate virtual environment
 python3 -m venv venv
