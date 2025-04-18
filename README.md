@@ -101,11 +101,58 @@ source venv/bin/activate  # or venv\Scripts\activate on Windows
 # Install dependencies
 pip install -r requirements.txt
 
+# Configure environment variables
+export AUTH_SERVICE_URL="http://localhost:8001"
+export ACCOUNT_SERVICE_URL="http://localhost:8002"
+export TRANSACTION_SERVICE_URL="http://localhost:8003"
+export REPORTING_SERVICE_URL="http://localhost:8004"
+export SESSION_SECRET="your_secret_key_here"
+export AUTH_DATABASE_URL="sqlite:///auth_service/auth.db"
+export ACCOUNT_DATABASE_URL="sqlite:///account_service/account.db"
+export TRANSACTION_DATABASE_URL="sqlite:///transaction_service/transaction.db"
+export REPORTING_DATABASE_URL="sqlite:///reporting_service/reporting.db"
+
 # Run all services
 python run_services.py
 ```
 
 Then visit <http://localhost:5000> in your browser to access the application.
+
+### Complete Environment Variable Reference
+
+Here's a complete list of environment variables used by the system:
+
+#### Service URLs (Used by the API Gateway)
+
+```
+AUTH_SERVICE_URL="http://localhost:8001"
+ACCOUNT_SERVICE_URL="http://localhost:8002" 
+TRANSACTION_SERVICE_URL="http://localhost:8003"
+REPORTING_SERVICE_URL="http://localhost:8004"
+```
+
+#### Database URLs (Used by each service)
+
+```
+AUTH_DATABASE_URL="sqlite:///auth_service/auth.db"
+ACCOUNT_DATABASE_URL="sqlite:///account_service/account.db"
+TRANSACTION_DATABASE_URL="sqlite:///transaction_service/transaction.db"
+REPORTING_DATABASE_URL="sqlite:///reporting_service/reporting.db"
+```
+
+#### Security
+
+```
+SESSION_SECRET="your_secret_key_here"  # Used for JWT token signing
+```
+
+#### Consul Service Discovery (Optional)
+
+```
+CONSUL_HOST="localhost"
+CONSUL_PORT="8500"
+USE_CONSUL="true"  # Enable Consul service discovery
+```
 
 ### Detailed Installation Steps
 
@@ -147,6 +194,10 @@ cd microbank
    export TRANSACTION_SERVICE_URL="http://localhost:8003"
    export REPORTING_SERVICE_URL="http://localhost:8004"
    export SESSION_SECRET="your_secret_key_here"
+   export AUTH_DATABASE_URL="sqlite:///auth_service/auth.db"
+   export ACCOUNT_DATABASE_URL="sqlite:///account_service/account.db"
+   export TRANSACTION_DATABASE_URL="sqlite:///transaction_service/transaction.db"
+   export REPORTING_DATABASE_URL="sqlite:///reporting_service/reporting.db"
    ```
 
 5. Run the application:
@@ -186,6 +237,10 @@ cd microbank
    export TRANSACTION_SERVICE_URL="http://localhost:8003"
    export REPORTING_SERVICE_URL="http://localhost:8004"
    export SESSION_SECRET="your_secret_key_here"
+   export AUTH_DATABASE_URL="sqlite:///auth_service/auth.db"
+   export ACCOUNT_DATABASE_URL="sqlite:///account_service/account.db"
+   export TRANSACTION_DATABASE_URL="sqlite:///transaction_service/transaction.db"
+   export REPORTING_DATABASE_URL="sqlite:///reporting_service/reporting.db"
    ```
 
 5. Run the application:
@@ -223,6 +278,10 @@ cd microbank
    set TRANSACTION_SERVICE_URL=http://localhost:8003
    set REPORTING_SERVICE_URL=http://localhost:8004
    set SESSION_SECRET=your_secret_key_here
+   set AUTH_DATABASE_URL=sqlite:///auth_service/auth.db
+   set ACCOUNT_DATABASE_URL=sqlite:///account_service/account.db
+   set TRANSACTION_DATABASE_URL=sqlite:///transaction_service/transaction.db
+   set REPORTING_DATABASE_URL=sqlite:///reporting_service/reporting.db
    ```
 
 5. Run the application:
@@ -243,6 +302,12 @@ export AUTH_SERVICE_URL="http://localhost:8001"
 export ACCOUNT_SERVICE_URL="http://localhost:8002"
 export TRANSACTION_SERVICE_URL="http://localhost:8003"
 export REPORTING_SERVICE_URL="http://localhost:8004"
+
+# Database URLs
+export AUTH_DATABASE_URL="sqlite:///auth_service/auth.db"
+export ACCOUNT_DATABASE_URL="sqlite:///account_service/account.db"
+export TRANSACTION_DATABASE_URL="sqlite:///transaction_service/transaction.db"
+export REPORTING_DATABASE_URL="sqlite:///reporting_service/reporting.db"
 
 # Security
 export SESSION_SECRET="your_secret_key_here"
@@ -315,6 +380,10 @@ export ACCOUNT_SERVICE_URL="http://localhost:8002"
 export TRANSACTION_SERVICE_URL="http://localhost:8003"
 export REPORTING_SERVICE_URL="http://localhost:8004"
 export SESSION_SECRET="your_secret_key_here"
+export AUTH_DATABASE_URL="sqlite:///auth_service/auth.db"
+export ACCOUNT_DATABASE_URL="sqlite:///account_service/account.db"
+export TRANSACTION_DATABASE_URL="sqlite:///transaction_service/transaction.db"
+export REPORTING_DATABASE_URL="sqlite:///reporting_service/reporting.db"
 python main.py
 ```
 
@@ -499,6 +568,10 @@ ACCOUNT_SERVICE_URL=http://localhost:8002
 TRANSACTION_SERVICE_URL=http://localhost:8003
 REPORTING_SERVICE_URL=http://localhost:8004
 SESSION_SECRET=dev_secret_key
+AUTH_DATABASE_URL=sqlite:///auth_service/auth.db
+ACCOUNT_DATABASE_URL=sqlite:///account_service/account.db
+TRANSACTION_DATABASE_URL=sqlite:///transaction_service/transaction.db
+REPORTING_DATABASE_URL=sqlite:///reporting_service/reporting.db
 ```
 
 Then use python-dotenv to load them:
