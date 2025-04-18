@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+
+{% block title %}Settings - Microbank{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0"><i class="fas fa-cog me-2"></i>Account Settings</h5>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+
+                {% if success %}
+                <div class="alert alert-success">{{ success }}</div>
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('update_settings') }}">
+                    <h5 class="mb-3"><i class="fas fa-bell me-2"></i>Notification Preferences</h5>
+                    <div class="mb-4">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="email_notifications"
+                                name="email_notifications" {% if settings.email_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="email_notifications">Email notifications</label>
+                        </div>
+                        <div class="form-text">Receive important account notifications via email.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="login_alerts" name="login_alerts" {% if
+                                settings.login_alerts %}checked{% endif %}>
+                            <label class="form-check-label" for="login_alerts">Login alerts</label>
+                        </div>
+                        <div class="form-text">Receive alerts when someone logs into your account.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="transaction_notifications"
+                                name="transaction_notifications" {% if settings.transaction_notifications %}checked{%
+                                endif %}>
+                            <label class="form-check-label" for="transaction_notifications">Transaction
+                                notifications</label>
+                        </div>
+                        <div class="form-text">Receive notifications for deposits, withdrawals, and transfers.</div>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3"><i class="fas fa-palette me-2"></i>Display Preferences</h5>
+                    <div class="mb-3">
+                        <label for="theme" class="form-label">Theme</label>
+                        <select class="form-select" id="theme" name="theme">
+                            <option value="dark" {% if settings.theme=='dark' %}selected{% endif %}>Dark</option>
+                            <option value="light" {% if settings.theme=='light' %}selected{% endif %}>Light</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="default_view" class="form-label">Default View</label>
+                        <select class="form-select" id="default_view" name="default_view">
+                            <option value="dashboard" {% if settings.default_view=='dashboard' %}selected{% endif %}>
+                                Dashboard</option>
+                            <option value="accounts" {% if settings.default_view=='accounts' %}selected{% endif %}>
+                                Accounts</option>
+                            <option value="transactions" {% if settings.default_view=='transactions' %}selected{% endif
+                                %}>Transactions</option>
+                        </select>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3"><i class="fas fa-lock me-2"></i>Security Settings</h5>
+                    <div class="mb-4">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="two_factor_auth" name="two_factor_auth"
+                                {% if settings.two_factor_auth %}checked{% endif %}>
+                            <label class="form-check-label" for="two_factor_auth">Two-factor authentication</label>
+                        </div>
+                        <div class="form-text">Add an extra layer of security to your account.</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

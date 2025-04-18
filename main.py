@@ -354,6 +354,59 @@ def update_profile():
     
     return redirect(url_for('profile'))
 
+@app.route('/settings')
+@login_required
+def settings():
+    """User settings page"""
+    # Default settings
+    user_settings = {
+        'email_notifications': True,
+        'login_alerts': True,
+        'transaction_notifications': True,
+        'theme': 'dark',
+        'default_view': 'dashboard',
+        'two_factor_auth': False
+    }
+    
+    # Here you would normally fetch user settings from a database
+    # For demonstration purposes, we're using default settings
+    
+    return render_template('settings.html', settings=user_settings)
+
+@app.route('/settings/update', methods=['POST'])
+@login_required
+def update_settings():
+    """Update user settings"""
+    # Get form data
+    email_notifications = 'email_notifications' in request.form
+    login_alerts = 'login_alerts' in request.form
+    transaction_notifications = 'transaction_notifications' in request.form
+    theme = request.form.get('theme', 'dark')
+    default_view = request.form.get('default_view', 'dashboard')
+    two_factor_auth = 'two_factor_auth' in request.form
+    
+    # Here you would normally save these settings to a database
+    # For demonstration purposes, we're just redirecting with success message
+    
+    # Store updated settings in session for persistence during the session
+    session['user_settings'] = {
+        'email_notifications': email_notifications,
+        'login_alerts': login_alerts,
+        'transaction_notifications': transaction_notifications,
+        'theme': theme,
+        'default_view': default_view,
+        'two_factor_auth': two_factor_auth
+    }
+    
+    # Update the session to reflect saved settings
+    user_settings = session.get('user_settings', {})
+    
+    return render_template(
+        'settings.html', 
+        settings=user_settings,
+        success='Settings updated successfully'
+    )
+
 @app.route('/transactions/transfer', methods=['GET', 'POST'])
 @login_required
 def transfer():
@@ -575,42 +628,67 @@ def transaction_report():
 @login_required
 def admin_dashboard():
     # Verify admin status
-    response, status = make_service_request(
-        AUTH_SERVICE_URL,
-        '/api/auth/verify_admin'
-    )
-
-    if status != 200 or not response.get('is_admin', False):
-        return render_template('error.html', error='Admin access required')
-
-    # Get all users
-    users_response, users_status = make_service_request(
-        AUTH_SERVICE_URL,
-        '/api/auth/users'
-    )
-
-    # Get all accounts
-    accounts_response, accounts_status = make_service_request(
-        ACCOUNT_SERVICE_URL,
-        '/api/accounts/all'
-    )
-
-    # Get system report
-    report_response, report_status = make_service_request(
-        REPORTING_SERVICE_URL,
-        '/api/reports/system'
-    )
-
-    users = users_response.get('users', []) if users_status == 200 else []
-    accounts = accounts_response.get('accounts', []) if accounts_status == 200 else []
-    report = report_response.get('report', {}) if report_status == 200 else {}
-
-    return render_template(
-        'admin.html',
-        users=users,
-        accounts=accounts,
-        report=report
-    )
+    try:
+        response, status = make_service_request(
+            AUTH_SERVICE_URL,
+            '/api/auth/verify_admin'
+        )
+        
+        if status != 200 or not response.get('is_admin', False):
+            return render_template('error.html', error='Admin access required')
+            
+        # Store admin role in session
+        session['role'] = 'admin'
+        
+        # Get all users
+        users_response, users_status = make_service_request(
+            AUTH_SERVICE_URL,
+            '/api/auth/users'
+        )
+        
+        if users_status != 200:
+            logger.error(f"Failed to get users: {users_response}")
+        
+        # Get all accounts
+        accounts_response, accounts_status = make_service_request(
+            ACCOUNT_SERVICE_URL,
+            '/api/accounts/all'
+        )
+        
+        if accounts_status != 200:
+            logger.error(f"Failed to get accounts: {accounts_response}")
+        
+        # Get system report
+        report_response, report_status = make_service_request(
+            REPORTING_SERVICE_URL,
+            '/api/reports/system'
+        )
+        
+        if report_status != 200:
+            logger.error(f"Failed to get system report: {report_response}")
+        
+        # Use data from responses
+        users = users_response.get('users', []) if users_status == 200 else []
+        accounts = accounts_response.get('accounts', []) if accounts_status == 200 else []
+        
+        # Extract the report data directly
+        report = {}
+        if report_status == 200 and 'report' in report_response:
+            report = report_response.get('report', {})
+            # Extract report_data if it exists (nested structure from Report model)
+            if 'report_data' in report:
+                report = report['report_data']
+        
+        return render_template(
+            'admin.html',
+            users=users,
+            accounts=accounts,
+            report=report
+        )
+        
+    except Exception as e:
+        logger.error(f"Admin dashboard error: {str(e)}")
+        return render_template('error.html', error=f'Error accessing admin dashboard: {str(e)}')
 
 @app.route('/health', methods=['GET'])
 def health_check():

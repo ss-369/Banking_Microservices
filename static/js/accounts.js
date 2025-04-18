@@ -45,6 +45,12 @@ function createAccount() {
         return;
     }
 
+    const validAccountTypes = ['checking', 'savings', 'fixed_deposit'];
+    if (!validAccountTypes.includes(accountType)) {
+        showToast('Please select a valid account type', 'warning');
+        return;
+    }
+
     if (isNaN(initialDeposit) || initialDeposit < 0) {
         showToast('Initial deposit must be a non-negative number', 'warning');
         return;

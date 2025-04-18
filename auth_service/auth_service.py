@@ -1,11 +1,81 @@
 import os
+import consul
 import logging
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from functools import wraps
+from flask import Flask, request, jsonify
+from auth_service.auth_models import db, User
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+import os
+import consul
+
+# Consul configuration
+CONSUL_HOST = os.environ.get("CONSUL_HOST", "localhost")
+CONSUL_PORT = int(os.environ.get("CONSUL_PORT", 8500))
+SERVICE_NAME = "auth-service"
+SERVICE_ID = f"{SERVICE_NAME}-{os.urandom(8).hex()}"
+SERVICE_PORT = 8001
+
+# Initialize Consul client
+consul_client = consul.Consul(host=CONSUL_HOST, port=CONSUL_PORT)
+
+# Register service with Consul
+def register_service():
+    consul_client.agent.service.register(
+        name=SERVICE_NAME,
+        service_id=SERVICE_ID,
+        address="localhost",
+        port=SERVICE_PORT,
+        check=consul.Check.http(
+            f"http://localhost:{SERVICE_PORT}/api/health",
+            interval="10s",
+            timeout="5s",
+        ),
+    )
+    logger.info(f"Registered service with Consul as {SERVICE_ID}")
+
+# Deregister service from Consul
+def deregister_service():
+    consul_client.agent.service.deregister(SERVICE_ID)
+    logger.info(f"Deregistered service from Consul: {SERVICE_ID}")
+
+# Initialize Flask app
+app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("AUTH_DATABASE_URL")
+app.config["JWT_SECRET_KEY"] = os.environ.get("SESSION_SECRET", "auth_service_secret_key")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+
+# Initialize extensions
+db.init_app(app)
+
+# Create tables
+with app.app_context():
+    db.create_all()
+# Register service on startup
+with app.app_context():
+    register_service()
+
+# Deregister service on shutdown
+import atexit
+atexit.register(deregister_service)
+
+import os
+import consul
+import logging
+import jwt
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import Flask, request, jsonify
 from werkzeug.security import generate_password_hash
-from auth_service.auth_models import db, User
+
+import logging
+
+import logging
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -13,11 +83,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("AUTH_DATABASE_URL")
 app.config["JWT_SECRET_KEY"] = os.environ.get("SESSION_SECRET", "auth_service_secret_key")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
 
@@ -32,8 +98,8 @@ with app.app_context():
 def generate_token(user_id, username, role):
     """Generate a JWT token for a user"""
     payload = {
-        'exp': datetime.utcnow() + timedelta(hours=1),
-        'iat': datetime.utcnow(),
+        'exp': datetime.now(timezone.utc) + timedelta(hours=1),
+        'iat': datetime.now(timezone.utc),
         'sub': user_id,
         'username': username,
         'role': role

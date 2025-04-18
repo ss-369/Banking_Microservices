@@ -1,6 +1,6 @@
 import os
+import consul
 import logging
-import requests
 import jwt
 from datetime import datetime
 from functools import wraps
@@ -11,13 +11,114 @@ from account_service.account_models import db, Account
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Consul configuration
+CONSUL_HOST = os.environ.get("CONSUL_HOST", "localhost")
+CONSUL_PORT = int(os.environ.get("CONSUL_PORT", 8500))
+SERVICE_NAME = "account-service"
+SERVICE_ID = f"{SERVICE_NAME}-{os.urandom(8).hex()}"
+SERVICE_PORT = 8002
+
+# Initialize Consul client
+consul_client = consul.Consul(host=CONSUL_HOST, port=CONSUL_PORT)
+
+# Register service with Consul
+def register_service():
+    consul_client.agent.service.register(
+        name=SERVICE_NAME,
+        service_id=SERVICE_ID,
+        address="localhost",
+        port=SERVICE_PORT,
+        check=consul.Check.http(
+            f"http://localhost:{SERVICE_PORT}/api/health",
+            interval="10s",
+            timeout="5s",
+        ),
+    )
+    logger.info(f"Registered service with Consul as {SERVICE_ID}")
+
+# Deregister service from Consul
+def deregister_service():
+    consul_client.agent.service.deregister(SERVICE_ID)
+    logger.info(f"Deregistered service from Consul: {SERVICE_ID}")
+
 # Initialize Flask app
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("ACCOUNT_DATABASE_URL")
+app.config["JWT_SECRET_KEY"] = os.environ.get("SESSION_SECRET", "account_service_secret_key")
+
+# Initialize extensions
+db.init_app(app)
+
+# Create tables
+with app.app_context():
+    db.create_all()
+# Register service on startup
+with app.app_context():
+    register_service()
+
+# Deregister service on shutdown
+import atexit
+atexit.register(deregister_service)
+
+import consul
+
+# Consul configuration
+CONSUL_HOST = os.environ.get("CONSUL_HOST", "localhost")
+CONSUL_PORT = int(os.environ.get("CONSUL_PORT", 8500))
+SERVICE_NAME = "account-service"
+SERVICE_ID = f"{SERVICE_NAME}-{os.urandom(8).hex()}"
+SERVICE_PORT = 8002
+
+# Initialize Consul client
+consul_client = consul.Consul(host=CONSUL_HOST, port=CONSUL_PORT)
+
+# Register service with Consul
+def register_service():
+    consul_client.agent.service.register(
+        name=SERVICE_NAME,
+        service_id=SERVICE_ID,
+        address="localhost",
+        port=SERVICE_PORT,
+        check=consul.Check.http(
+            f"http://localhost:{SERVICE_PORT}/api/health",
+            interval="10s",
+            timeout="5s",
+        ),
+    )
+    logger.info(f"Registered service with Consul as {SERVICE_ID}")
+
+# Deregister service from Consul
+def deregister_service():
+    consul_client.agent.service.deregister(SERVICE_ID)
+    logger.info(f"Deregistered service from Consul: {SERVICE_ID}")
+
+# Register service on startup
+with app.app_context():
+    register_service()
+
+# Deregister service on shutdown
+import atexit
+atexit.register(deregister_service)
+
+import os
+import logging
+import requests
+import jwt
+from datetime import datetime
+from functools import wraps
+from flask import Flask, request, jsonify
+
+import logging
+
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+# Initialize Flask app
+app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("ACCOUNT_DATABASE_URL")
 app.config["JWT_SECRET_KEY"] = os.environ.get("SESSION_SECRET", "account_service_secret_key")
 
 # Initialize extensions
@@ -123,11 +224,19 @@ def create_account(current_user):
         return jsonify({'message': 'Account type is required'}), 400
     
     # Check for valid account types
-    valid_types = ['checking', 'savings', 'fixed_deposit']
+    valid_types = ['checking', 'savings', 'fixed_deposit', 'investment']
     if data['account_type'] not in valid_types:
         return jsonify({'message': f'Invalid account type. Must be one of: {", ".join(valid_types)}'}), 400
     
-    initial_deposit = float(data.get('initial_deposit', 0))
+    initial_deposit_raw = data.get('initial_deposit', '')
+    if isinstance(initial_deposit_raw, str) and initial_deposit_raw.strip() == '':
+        initial_deposit = 0.0
+    else:
+        try:
+            initial_deposit = float(initial_deposit_raw)
+        except (ValueError, TypeError):
+            return jsonify({'message': 'Initial deposit must be a number'}), 400
+
     if initial_deposit < 0:
         return jsonify({'message': 'Initial deposit cannot be negative'}), 400
     

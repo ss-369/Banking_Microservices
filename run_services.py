@@ -30,6 +30,11 @@ services = [
         "name": "API Gateway",
         "command": ["gunicorn", "--bind", "0.0.0.0:5000", "--reuse-port", "--reload", "main:app"],
         "process": None
+    },
+    {
+        "name": "Consul",
+        "command": ["consul", "agent", "-dev", "-client", "0.0.0.0"],
+        "process": None
     }
 ]
 
@@ -55,12 +60,40 @@ def main():
     # Create necessary directories
     os.makedirs("data", exist_ok=True)
     
-    # Start all services
+    # Start Consul first
     try:
+        consul_service = next((s for s in services if s["name"] == "Consul"), None)
+        if consul_service:
+            # Check if Consul is already running
+            process = subprocess.Popen(["consul", "info"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = process.communicate()
+            if process.returncode == 0:
+                print("Consul is already running.")
+            else:
+                print(f"Starting {consul_service['name']}...")
+                consul_service["process"] = subprocess.Popen(
+                    consul_service["command"],
+                    stdout=None,  # Display directly to console
+                    stderr=None,  # Display directly to console
+                    text=True
+                )
+                time.sleep(5)  # Give Consul time to start
+
+                if consul_service["process"].poll() is not None:
+                    stdout, stderr = consul_service["process"].communicate()
+                    print(f"Failed to start {consul_service['name']}!")
+                    print(f"STDOUT: {stdout}")
+                    print(f"STDERR: {stderr}")
+                    signal_handler(None, None)
+                else:
+                    print(f"{consul_service['name']} started successfully!")
+
+        # Start all other services
         for service in services:
-            print(f"Starting {service['name']}...")
-            # Use subprocess.STDOUT to merge stderr into stdout for easier monitoring
-            service["process"] = subprocess.Popen(
+            if service["name"] != "Consul":
+                print(f"Starting {service['name']}...")
+                # Use subprocess.STDOUT to merge stderr into stdout for easier monitoring
+                service["process"] = subprocess.Popen(
                 service["command"],
                 stdout=None,  # Display directly to console
                 stderr=None,  # Display directly to console
@@ -69,8 +102,8 @@ def main():
             # Give a moment for the service to start
             time.sleep(1)
             
-            # Check if process is still running
-            if service["process"].poll() is not None:
+            # Check if process is still running (only if we started it)
+            if service["process"] is not None and service["process"].poll() is not None:
                 stdout, stderr = service["process"].communicate()
                 print(f"Failed to start {service['name']}!")
                 print(f"STDOUT: {stdout}")
@@ -84,7 +117,8 @@ def main():
         # Monitor processes and keep them running
         while True:
             for service in services:
-                if service["process"].poll() is not None:
+                # Only poll if the process was started by this script
+                if service["process"] is not None and service["process"].poll() is not None:
                     stdout, stderr = service["process"].communicate()
                     print(f"{service['name']} has stopped unexpectedly!")
                     print(f"STDOUT: {stdout}")

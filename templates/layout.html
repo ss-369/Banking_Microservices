@@ -1,21 +1,23 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Banking Microservices{% endblock %}</title>
-    
+
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
-    
+
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
@@ -24,75 +26,97 @@
                 <i class="fas fa-university me-2"></i>
                 Microbank
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     {% if session.get('token') %}
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.path == '/dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                                <i class="fas fa-tachometer-alt me-1"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if '/accounts' in request.path and '/reports' not in request.path %}active{% endif %}" href="{{ url_for('accounts') }}">
-                                <i class="fas fa-wallet me-1"></i> Accounts
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if '/transactions' in request.path and '/reports' not in request.path %}active{% endif %}" href="{{ url_for('transactions') }}">
-                                <i class="fas fa-exchange-alt me-1"></i> Transactions
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.path == '/transfer' %}active{% endif %}" href="{{ url_for('transfer') }}">
-                                <i class="fas fa-paper-plane me-1"></i> Transfer
-                            </a>
-                        </li>
-                        {% if session.get('role') == 'admin' %}
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-user-shield me-1"></i> Admin
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                                    <li><a class="dropdown-item" href="#">User Management</a></li>
-                                    <li><a class="dropdown-item" href="#">System Reports</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="#">System Settings</a></li>
-                                </ul>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/dashboard' %}active{% endif %}"
+                            href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/accounts' in request.path and '/reports' not in request.path %}active{% endif %}"
+                            href="{{ url_for('accounts') }}">
+                            <i class="fas fa-wallet me-1"></i> Accounts
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/transactions' in request.path and '/reports' not in request.path %}active{% endif %}"
+                            href="{{ url_for('transactions') }}">
+                            <i class="fas fa-exchange-alt me-1"></i> Transactions
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/transfer' %}active{% endif %}"
+                            href="{{ url_for('transfer') }}">
+                            <i class="fas fa-paper-plane me-1"></i> Transfer
+                        </a>
+                    </li>
+                    {% if session.get('role') == 'admin' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-shield me-1"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}"><i
+                                        class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}#users"><i
+                                        class="fas fa-users me-2"></i>User Management</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}#reports"><i
+                                        class="fas fa-chart-bar me-2"></i>System Reports</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
                             </li>
-                        {% endif %}
+                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}#settings"><i
+                                        class="fas fa-cogs me-2"></i>System Settings</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
                     {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{{ url_for('index') }}">Home</a>
-                        </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}"
+                            href="{{ url_for('index') }}">Home</a>
+                    </li>
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
                     {% if session.get('token') %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-user-circle me-1"></i> {{ session.get('username', 'User') }}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-id-card me-2"></i>Profile</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            </ul>
-                        </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-1"></i> {{ session.get('username', 'User') }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i
+                                        class="fas fa-id-card me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i
+                                        class="fas fa-cog me-2"></i>Settings</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i
+                                        class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
                     {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.path == '/login' %}active{% endif %}" href="{{ url_for('login') }}">
-                                <i class="fas fa-sign-in-alt me-1"></i> Login
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.path == '/register' %}active{% endif %}" href="{{ url_for('register') }}">
-                                <i class="fas fa-user-plus me-1"></i> Register
-                            </a>
-                        </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/login' %}active{% endif %}"
+                            href="{{ url_for('login') }}">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/register' %}active{% endif %}"
+                            href="{{ url_for('register') }}">
+                            <i class="fas fa-user-plus me-1"></i> Register
+                        </a>
+                    </li>
                     {% endif %}
                 </ul>
             </div>
@@ -103,14 +127,14 @@
     <div class="container">
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
         {% endwith %}
 
         <!-- Page Content -->
@@ -131,12 +155,12 @@
                     <ul class="list-unstyled">
                         <li><a href="{{ url_for('index') }}" class="text-white-50">Home</a></li>
                         {% if session.get('token') %}
-                            <li><a href="{{ url_for('dashboard') }}" class="text-white-50">Dashboard</a></li>
-                            <li><a href="{{ url_for('accounts') }}" class="text-white-50">Accounts</a></li>
-                            <li><a href="{{ url_for('transactions') }}" class="text-white-50">Transactions</a></li>
+                        <li><a href="{{ url_for('dashboard') }}" class="text-white-50">Dashboard</a></li>
+                        <li><a href="{{ url_for('accounts') }}" class="text-white-50">Accounts</a></li>
+                        <li><a href="{{ url_for('transactions') }}" class="text-white-50">Transactions</a></li>
                         {% else %}
-                            <li><a href="{{ url_for('login') }}" class="text-white-50">Login</a></li>
-                            <li><a href="{{ url_for('register') }}" class="text-white-50">Register</a></li>
+                        <li><a href="{{ url_for('login') }}" class="text-white-50">Login</a></li>
+                        <li><a href="{{ url_for('register') }}" class="text-white-50">Register</a></li>
                         {% endif %}
                     </ul>
                 </div>
@@ -154,10 +178,11 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
+
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>
